@@ -1,45 +1,48 @@
-# [Project name]
+# 5G NR Calculadora
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A mobile (Expo) app with two on-device 5G NR engineering calculators: a Throughput calculator (3GPP TS 38.214 peak data rate) and a Link Budget calculator (receiver sensitivity, MAPL, free-space cell radius).
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/mobile run dev` — run the Expo dev server (managed by the `artifacts/mobile: expo` workflow)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Restart the `artifacts/mobile: expo` workflow only on dependency/Metro changes — HMR handles code edits.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Expo (SDK 54) + expo-router (file-based routing, stack navigation)
+- React Native 0.81, TypeScript 5.9
+- Inter font family (pre-loaded), @expo/vector-icons, expo-linear-gradient, expo-haptics
+- Frontend-only: all calculations run on-device, no backend or database
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mobile/lib/calc.ts` — all calculation logic + 3GPP N_RB lookup tables (source of truth for the math)
+- `artifacts/mobile/app/index.tsx` — home screen with the two calculator cards
+- `artifacts/mobile/app/throughput.tsx` — Throughput calculator screen
+- `artifacts/mobile/app/link-budget.tsx` — Link Budget calculator screen
+- `artifacts/mobile/components/ui.tsx` — shared UI primitives (Card, NumberField, PillSelector, Segmented, ResultRow)
+- `artifacts/mobile/constants/colors.ts` — dark telecom theme tokens
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- App is locked to dark appearance (`userInterfaceStyle: "dark"` in app.json); the palette lives in the `light` key of colors.ts since `useColors` falls back to it.
+- Throughput uses the TS 38.214 max-rate formula with N_RB tables from TS 38.101-1 (FR1) / 38.101-2 (FR2). The user-set target code rate replaces Rmax (default 948/1024 ≈ 0.9258).
+- Link budget cell radius uses the free-space path loss model only (optimistic; labeled "espaço livre" in the UI).
+- Dependent selectors (FR → SCS → bandwidth) self-correct to valid combinations; unsupported combos show an explicit error instead of a wrong number.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Two calculators reachable from a home screen. Inputs are pre-filled with sensible 5G defaults and results recompute instantly as inputs change. UI is in Portuguese.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_None recorded yet._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The first web screenshot after a restart can show missing text — that's a font-loading race in the web preview, not a bug. Native (Expo Go) is the source of truth.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `pnpm-workspace` skill for workspace structure and the `expo` skill for mobile conventions.

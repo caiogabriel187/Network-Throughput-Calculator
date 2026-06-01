@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ActivityIndicator,
   Platform,
   StyleSheet,
   Text,
@@ -267,10 +268,134 @@ export function ResultRow({
   );
 }
 
+export function TextField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  error,
+  multiline,
+  autoFocus,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  error?: string | null;
+  multiline?: boolean;
+  autoFocus?: boolean;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.fieldBlock}>
+      <FieldLabel label={label} />
+      <View
+        style={[
+          styles.inputWrap,
+          {
+            backgroundColor: colors.input,
+            borderColor: error ? colors.destructive : colors.border,
+            borderRadius: colors.radius - 4,
+          },
+        ]}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          multiline={multiline}
+          autoFocus={autoFocus}
+          style={[
+            styles.input,
+            multiline && styles.inputMultiline,
+            { color: colors.foreground },
+          ]}
+        />
+      </View>
+      {error ? (
+        <Text style={[styles.errorText, { color: colors.destructive }]}>
+          {error}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+export function Button({
+  label,
+  onPress,
+  loading,
+  disabled,
+  variant = "primary",
+}: {
+  label: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  variant?: "primary" | "secondary" | "destructive";
+}) {
+  const colors = useColors();
+  const bg =
+    variant === "primary"
+      ? colors.primary
+      : variant === "destructive"
+        ? colors.destructive
+        : colors.secondary;
+  const fg =
+    variant === "secondary" ? colors.secondaryForeground : colors.primaryForeground;
+  const isDisabled = disabled || loading;
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      disabled={isDisabled}
+      onPress={() => {
+        if (Platform.OS !== "web") {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        onPress();
+      }}
+      style={[
+        styles.button,
+        {
+          backgroundColor: bg,
+          borderRadius: colors.radius - 4,
+          opacity: isDisabled ? 0.55 : 1,
+        },
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <Text style={[styles.buttonText, { color: fg }]}>{label}</Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     padding: 18,
+  },
+  errorText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    marginTop: 6,
+  },
+  inputMultiline: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  button: {
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+  },
+  buttonText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
   },
   sectionLabel: {
     fontFamily: "Inter_600SemiBold",

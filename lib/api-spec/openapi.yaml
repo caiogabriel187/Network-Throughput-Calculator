@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: calculations
+    description: Saved 5G NR calculations
 paths:
   /healthz:
     get:
@@ -24,6 +26,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /calculations:
+    get:
+      operationId: getCalculations
+      tags: [calculations]
+      summary: List saved calculations
+      description: Returns all saved 5G NR calculations, newest first.
+      responses:
+        "200":
+          description: A list of saved calculations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Calculation"
+    post:
+      operationId: createCalculation
+      tags: [calculations]
+      summary: Save a calculation
+      description: Stores a new 5G NR calculation result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCalculation"
+      responses:
+        "201":
+          description: The created calculation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Calculation"
+  /calculations/{id}:
+    delete:
+      operationId: deleteCalculation
+      tags: [calculations]
+      summary: Delete a calculation
+      description: Removes a saved calculation by id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
 components:
   schemas:
     HealthStatus:
@@ -33,4 +83,47 @@ components:
           type: string
       required:
         - status
-
+    CalculationType:
+      type: string
+      enum:
+        - throughput
+        - link-budget
+    Calculation:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          $ref: "#/components/schemas/CalculationType"
+        title:
+          type: string
+        summary:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - title
+        - summary
+        - createdAt
+    CreateCalculation:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/CalculationType"
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+          minLength: 1
+        notes:
+          type: string
+      required:
+        - type
+        - title
+        - summary

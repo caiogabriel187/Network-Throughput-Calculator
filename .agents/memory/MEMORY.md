@@ -1,0 +1,2 @@
+- [api-server dev is build+start](api-server-dev-restart.md) — backend dev script bundles once (no watch); restart the workflow after editing backend code or routes 404 with a stale bundle.
+- [Spec-first API workflow](api-codegen-workflow.md) — edit lib/api-spec/openapi.yaml then run codegen; use generated React Query hooks + Zod schemas, never hand-write fetch.

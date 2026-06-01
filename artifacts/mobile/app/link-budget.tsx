@@ -1,9 +1,11 @@
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import {
+  Button,
   Card,
   NumberField,
   ResultRow,
@@ -100,6 +102,26 @@ export default function LinkBudgetScreen() {
           value={result ? result.thermalNoise.toFixed(1) : "—"}
           unit="dBm"
         />
+        {result ? (
+          <View style={{ marginTop: 16 }}>
+            <Button
+              label="Salvar resultado"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: "/save-calculation",
+                  params: {
+                    type: "link-budget",
+                    title: `${direction} ${frequency} MHz · NF ${noiseFigure} dB`,
+                    summary: `Raio ${radius.value} ${radius.unit} · MAPL ${result.mapl.toFixed(
+                      1,
+                    )} dB · Sens. ${result.sensitivity.toFixed(1)} dBm`,
+                  },
+                })
+              }
+            />
+          </View>
+        ) : null}
       </Card>
 
       <Card style={{ marginBottom: 20 }}>

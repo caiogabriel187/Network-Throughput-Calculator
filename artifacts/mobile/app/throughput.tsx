@@ -1,9 +1,11 @@
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import {
+  Button,
   Card,
   NumberField,
   PillSelector,
@@ -129,6 +131,22 @@ export default function ThroughputScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <ResultRow label="Resource Blocks (PRB)" value={String(result.nprb)} />
             <ResultRow label="Numerologia (µ)" value={String(result.mu)} />
+            <View style={{ marginTop: 16 }}>
+              <Button
+                label="Salvar resultado"
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: "/save-calculation",
+                    params: {
+                      type: "throughput",
+                      title: `${fr} ${bandwidth} MHz · ${modulation}-QAM · ${layers}×${numCC}`,
+                      summary: `DL ${dl!.value} ${dl!.unit} · UL ${ul!.value} ${ul!.unit} · ${result.nprb} PRB`,
+                    },
+                  })
+                }
+              />
+            </View>
           </>
         ) : (
           <Text style={[styles.invalid, { color: colors.destructive }]}>

@@ -134,6 +134,12 @@ export default function HomeScreen() {
             icon="radio-tower"
             onPress={() => router.push("/link-budget")}
           />
+          <CalcCard
+            title="Histórico de cálculos"
+            subtitle="Resultados salvos na nuvem"
+            icon="history"
+            onPress={() => router.push("/history")}
+          />
         </View>
 
         <View

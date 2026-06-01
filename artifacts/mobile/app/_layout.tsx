@@ -13,8 +13,16 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { setBaseUrl } from "@workspace/api-client-react";
+
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useColors } from "@/hooks/useColors";
+
+// Expo bundles run outside the web proxy, so the API client needs an absolute
+// URL to reach the Express server. The domain is injected at build time.
+if (process.env.EXPO_PUBLIC_DOMAIN) {
+  setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+}
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -42,6 +50,11 @@ function RootLayoutNav() {
       <Stack.Screen
         name="link-budget"
         options={{ title: "Link Budget 5G NR" }}
+      />
+      <Stack.Screen name="history" options={{ title: "Histórico" }} />
+      <Stack.Screen
+        name="save-calculation"
+        options={{ title: "Salvar cálculo", presentation: "modal" }}
       />
     </Stack>
   );

@@ -104,20 +104,29 @@ No Android Studio: **Device Manager → ▶** para abrir o AVD.
 
 ### 5. Rode o app no emulador
 
-Duas formas (ambas instalam no emulador já aberto):
+**Opção A — Expo Go (recomendada, mais simples):** com o emulador aberto, rode o
+Metro e pressione `a` — o app é instalado e aberto no emulador automaticamente.
 
 ```bash
 cd artifacts/mobile
-
-# A) Expo Go — mais rápido: pressione "a" quando o Metro iniciar
 pnpm exec expo start
+# pressione "a" quando o Metro iniciar
+```
 
-# B) Build nativo — gera a pasta android/ para abrir no Android Studio
+**Opção B — Build nativo (gera o projeto Android para o Android Studio):**
+
+> Pré-requisito do monorepo pnpm: o `expo run:android` usa o autolinking do
+> Gradle, que precisa dos módulos nativos "achatados" em `node_modules`. Crie
+> `artifacts/mobile/.npmrc` com `node-linker=hoisted` e rode `pnpm install` na
+> raiz **antes** do build. (O Expo Go da Opção A não exige isso.)
+
+```bash
+cd artifacts/mobile
 pnpm exec expo run:android
 ```
 
-Na **Opção B**, a pasta `artifacts/mobile/android/` gerada pode ser aberta
-diretamente no Android Studio em **Open → artifacts/mobile/android**.
+Isso gera a pasta `artifacts/mobile/android/`, que pode ser aberta diretamente no
+Android Studio em **Open → artifacts/mobile/android**.
 
 > Observação: na Opção B do passo 1 (API local via `http://10.0.2.2`) o tráfego
 > é HTTP sem TLS; em builds de desenvolvimento o Android permite isso por padrão.

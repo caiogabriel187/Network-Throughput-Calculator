@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -13,7 +14,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { setBaseUrl } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useColors } from "@/hooks/useColors";
@@ -43,6 +44,31 @@ const apiBaseUrl = resolveApiBaseUrl();
 if (apiBaseUrl) {
   setBaseUrl(apiBaseUrl);
 }
+
+// ---------------------------------------------------------------------------
+// Per-device anonymous session token
+//
+// Each device generates a random UUID the first time the app runs and persists
+// it in AsyncStorage. This token is sent as a Bearer header on every request to
+// the calculations API, so the server can scope history reads and writes to
+// that device only. The token never leaves the device storage — it is NOT
+// bundled into the app binary (unlike EXPO_PUBLIC_* variables), so it cannot
+// be extracted by inspecting the JavaScript bundle.
+// ---------------------------------------------------------------------------
+const SESSION_KEY = "@5gnr/session_token";
+
+async function getOrCreateSessionToken(): Promise<string> {
+  let token = await AsyncStorage.getItem(SESSION_KEY);
+  if (!token) {
+    token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    await AsyncStorage.setItem(SESSION_KEY, token);
+  }
+  return token;
+}
+
+// The getter returns a Promise; customFetch awaits it before each request.
+const sessionTokenPromise = getOrCreateSessionToken();
+setAuthTokenGetter(() => sessionTokenPromise);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

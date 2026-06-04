@@ -32,6 +32,8 @@ paths:
       tags: [calculations]
       summary: List saved calculations
       description: Returns all saved 5G NR calculations, newest first.
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: A list of saved calculations
@@ -41,11 +43,15 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Calculation"
+        "401":
+          description: Missing or invalid API key
     post:
       operationId: createCalculation
       tags: [calculations]
       summary: Save a calculation
       description: Stores a new 5G NR calculation result.
+      security:
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -59,12 +65,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Calculation"
+        "401":
+          description: Missing or invalid API key
+        "429":
+          description: Too many requests
   /calculations/{id}:
     delete:
       operationId: deleteCalculation
       tags: [calculations]
       summary: Delete a calculation
       description: Removes a saved calculation by id.
+      security:
+        - ApiKeyAuth: []
       parameters:
         - name: id
           in: path
@@ -74,7 +86,15 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          description: Missing or invalid API key
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Bearer token: Authorization: Bearer <API_KEY>"
   schemas:
     HealthStatus:
       type: object
@@ -118,11 +138,14 @@ components:
         title:
           type: string
           minLength: 1
+          maxLength: 255
         summary:
           type: string
           minLength: 1
+          maxLength: 512
         notes:
           type: string
+          maxLength: 1024
       required:
         - type
         - title

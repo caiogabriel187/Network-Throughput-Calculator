@@ -36,15 +36,19 @@ export const GetCalculationsResponse = zod.array(GetCalculationsResponseItem)
  * Stores a new 5G NR calculation result.
  * @summary Save a calculation
  */
+export const createCalculationBodyTitleMax = 255;
 
+export const createCalculationBodySummaryMax = 512;
+
+export const createCalculationBodyNotesMax = 1024;
 
 
 
 export const CreateCalculationBody = zod.object({
   "type": zod.enum(['throughput', 'link-budget']),
-  "title": zod.string().min(1),
-  "summary": zod.string().min(1),
-  "notes": zod.string().optional()
+  "title": zod.string().min(1).max(createCalculationBodyTitleMax),
+  "summary": zod.string().min(1).max(createCalculationBodySummaryMax),
+  "notes": zod.string().max(createCalculationBodyNotesMax).optional()
 })
 
 

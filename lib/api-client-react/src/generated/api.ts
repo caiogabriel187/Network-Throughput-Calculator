@@ -149,7 +149,7 @@ export const getGetCalculationsQueryKey = () => {
     }
 
 
-export const getGetCalculationsQueryOptions = <TData = Awaited<ReturnType<typeof getCalculations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalculations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCalculationsQueryOptions = <TData = Awaited<ReturnType<typeof getCalculations>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalculations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -168,14 +168,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetCalculationsQueryResult = NonNullable<Awaited<ReturnType<typeof getCalculations>>>
-export type GetCalculationsQueryError = ErrorType<unknown>
+export type GetCalculationsQueryError = ErrorType<void>
 
 
 /**
  * @summary List saved calculations
  */
 
-export function useGetCalculations<TData = Awaited<ReturnType<typeof getCalculations>>, TError = ErrorType<unknown>>(
+export function useGetCalculations<TData = Awaited<ReturnType<typeof getCalculations>>, TError = ErrorType<void>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalculations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -220,7 +220,7 @@ export const createCalculation = async (createCalculation: CreateCalculation, op
 
 
 
-export const getCreateCalculationMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateCalculationMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCalculation>>, TError,{data: BodyType<CreateCalculation>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCalculation>>, TError,{data: BodyType<CreateCalculation>}, TContext> => {
 
@@ -249,12 +249,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateCalculationMutationResult = NonNullable<Awaited<ReturnType<typeof createCalculation>>>
     export type CreateCalculationMutationBody = BodyType<CreateCalculation>
-    export type CreateCalculationMutationError = ErrorType<unknown>
+    export type CreateCalculationMutationError = ErrorType<void>
 
     /**
  * @summary Save a calculation
  */
-export const useCreateCalculation = <TError = ErrorType<unknown>,
+export const useCreateCalculation = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCalculation>>, TError,{data: BodyType<CreateCalculation>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createCalculation>>,
@@ -291,7 +291,7 @@ export const deleteCalculation = async (id: string, options?: RequestInit): Prom
 
 
 
-export const getDeleteCalculationMutationOptions = <TError = ErrorType<unknown>,
+export const getDeleteCalculationMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCalculation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteCalculation>>, TError,{id: string}, TContext> => {
 
@@ -320,12 +320,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteCalculationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCalculation>>>
 
-    export type DeleteCalculationMutationError = ErrorType<unknown>
+    export type DeleteCalculationMutationError = ErrorType<void>
 
     /**
  * @summary Delete a calculation
  */
-export const useDeleteCalculation = <TError = ErrorType<unknown>,
+export const useDeleteCalculation = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCalculation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteCalculation>>,

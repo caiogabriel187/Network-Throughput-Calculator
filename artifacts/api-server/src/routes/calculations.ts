@@ -1,4 +1,5 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { rateLimit } from "express-rate-limit";
 import { randomUUID } from "node:crypto";
 import { CreateCalculationBody } from "@workspace/api-zod";
 
@@ -13,40 +14,119 @@ interface Calculation {
   createdAt: string;
 }
 
-// In-memory store. Simple persistence layer for this teaching project — data
-// lives for the lifetime of the server process.
-const calculations: Calculation[] = [
-  {
-    id: randomUUID(),
-    type: "throughput",
-    title: "FR1 100 MHz · 256-QAM",
-    summary: "DL 1.75 Gbps · UL 625 Mbps · 273 PRB",
-    notes: "4 camadas MIMO, TDD 75/25.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: randomUUID(),
-    type: "link-budget",
-    title: "Cobertura urbana 3.5 GHz",
-    summary: "Raio 271.6 km · MAPL 152 dB · Sens. -100 dBm",
-    notes: "Modelo de espaço livre (otimista).",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-];
+// ---------------------------------------------------------------------------
+// Per-session in-memory store
+//
+// Each device generates its own opaque Bearer token (stored in AsyncStorage)
+// and sends it on every request. The server uses that token as the session key
+// so each caller only ever reads or mutates its own records.
+// ---------------------------------------------------------------------------
 
-function sorted(): Calculation[] {
-  return [...calculations].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+interface SessionData {
+  calculations: Calculation[];
+  lastAccessedAt: number;
 }
+
+// Caps that bound memory growth regardless of attacker volume.
+const MAX_RECORDS_PER_SESSION = 50;
+const MAX_SESSIONS = 5_000;
+
+const sessions = new Map<string, SessionData>();
+
+function getOrCreateSession(token: string): SessionData {
+  let session = sessions.get(token);
+
+  if (!session) {
+    // Evict the least-recently-used session when the global cap is reached
+    // so the map stays bounded under sustained abuse.
+    if (sessions.size >= MAX_SESSIONS) {
+      let lruToken: string | null = null;
+      let lruTime = Infinity;
+      for (const [t, s] of sessions) {
+        if (s.lastAccessedAt < lruTime) {
+          lruTime = s.lastAccessedAt;
+          lruToken = t;
+        }
+      }
+      if (lruToken) sessions.delete(lruToken);
+    }
+
+    session = { calculations: [], lastAccessedAt: Date.now() };
+    sessions.set(token, session);
+  } else {
+    session.lastAccessedAt = Date.now();
+  }
+
+  return session;
+}
+
+function sortedCalcs(calcs: Calculation[]): Calculation[] {
+  return [...calcs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+// ---------------------------------------------------------------------------
+// Auth middleware — validates that the request carries a non-empty Bearer
+// token. The token is the caller's session identifier; it is not validated
+// against a server-side secret, so it carries no global privilege. Each
+// unique token gives access only to that token's own data.
+// ---------------------------------------------------------------------------
+
+// Accepted token characters: hex, alphanumeric, hyphens, underscores.
+const TOKEN_RE = /^[a-zA-Z0-9\-_]+$/;
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      sessionToken?: string;
+    }
+  }
+}
+
+function requireSession(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization ?? "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+
+  if (!token) {
+    res.status(401).json({
+      title: "Não autorizado",
+      detail: "Token de sessão ausente. Inclua um header Authorization: Bearer <token>.",
+    });
+    return;
+  }
+
+  if (token.length > 128 || !TOKEN_RE.test(token)) {
+    res.status(401).json({
+      title: "Não autorizado",
+      detail: "Token de sessão inválido.",
+    });
+    return;
+  }
+
+  req.sessionToken = token;
+  next();
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiter — caps POST /calculations at 30 requests per IP per minute
+// to resist write-flood memory-exhaustion attacks.
+// ---------------------------------------------------------------------------
+const postRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { title: "Muitas requisições", detail: "Tente novamente em alguns instantes." },
+});
 
 const router: IRouter = Router();
 
-router.get("/calculations", (_req, res) => {
-  res.json(sorted());
+router.get("/calculations", requireSession, (req, res) => {
+  const session = getOrCreateSession(req.sessionToken!);
+  res.json(sortedCalcs(session.calculations));
 });
 
-router.post("/calculations", (req, res) => {
+router.post("/calculations", requireSession, postRateLimit, (req, res) => {
   const parsed = CreateCalculationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -70,6 +150,18 @@ router.post("/calculations", (req, res) => {
     return;
   }
 
+  const session = getOrCreateSession(req.sessionToken!);
+
+  // Evict the oldest record when the per-session cap is reached.
+  if (session.calculations.length >= MAX_RECORDS_PER_SESSION) {
+    const oldestIndex = session.calculations.reduce(
+      (minIdx, calc, idx, arr) =>
+        calc.createdAt < arr[minIdx].createdAt ? idx : minIdx,
+      0,
+    );
+    session.calculations.splice(oldestIndex, 1);
+  }
+
   const calculation: Calculation = {
     id: randomUUID(),
     type: type as CalculationType,
@@ -79,18 +171,20 @@ router.post("/calculations", (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  calculations.push(calculation);
+  session.calculations.push(calculation);
   res.status(201).json(calculation);
 });
 
-router.delete("/calculations/:id", (req, res) => {
-  const index = calculations.findIndex((c) => c.id === req.params.id);
+router.delete("/calculations/:id", requireSession, (req, res) => {
+  const session = getOrCreateSession(req.sessionToken!);
+  const index = session.calculations.findIndex((c) => c.id === req.params.id);
+
   if (index === -1) {
     res.status(404).json({ title: "Cálculo não encontrado" });
     return;
   }
 
-  calculations.splice(index, 1);
+  session.calculations.splice(index, 1);
   res.status(204).end();
 });
 

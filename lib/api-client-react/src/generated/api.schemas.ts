@@ -28,10 +28,17 @@ export interface Calculation {
 
 export interface CreateCalculation {
   type: CalculationType;
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
   title: string;
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @maxLength 512
+     */
   summary: string;
+  /** @maxLength 1024 */
   notes?: string;
 }
 

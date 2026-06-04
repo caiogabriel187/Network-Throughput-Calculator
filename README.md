@@ -52,6 +52,76 @@ pnpm --filter @workspace/mobile run dev
 
 Abra a pré-visualização (web) ou escaneie o QR Code com o Expo Go.
 
+## Rodar no Android Studio (emulador)
+
+O app pode ser executado no emulador do Android Studio em **qualquer
+computador** e **qualquer rede**. A URL da API é configurável: defina
+`EXPO_PUBLIC_API_URL` (veja `artifacts/mobile/.env.example`). Os cálculos
+funcionam offline; apenas o Histórico precisa da API.
+
+### Pré-requisitos
+
+- Node.js LTS e **pnpm** (`npm i -g pnpm`)
+- Android Studio com um **emulador (AVD)** criado no Device Manager
+- JDK 17 (instalado junto com o Android Studio)
+
+### 1. Deixe a API acessível
+
+A API precisa estar acessível pela internet para funcionar em qualquer rede.
+
+- **Opção A (recomendada) — publicar no Replit:** clique em **Publish/Deploy**.
+  Você recebe uma URL fixa `https://<seu-app>.replit.app`; a API fica em
+  `https://<seu-app>.replit.app/api`.
+- **Opção B — API local (mesma máquina):** rode
+  `PORT=8080 pnpm --filter @workspace/api-server run dev`. O emulador acessa o
+  host da máquina pela URL especial `http://10.0.2.2:8080`.
+
+### 2. Configure a URL da API
+
+```bash
+cp artifacts/mobile/.env.example artifacts/mobile/.env
+```
+
+No `artifacts/mobile/.env`, descomente **uma** das opções (use apenas a
+origem, **sem** o caminho `/api` — o cliente já o adiciona):
+
+```bash
+# Opção A
+EXPO_PUBLIC_API_URL=https://<seu-app>.replit.app
+# Opção B
+EXPO_PUBLIC_API_URL=http://10.0.2.2:8080
+```
+
+### 3. Instale as dependências (na raiz)
+
+```bash
+pnpm install
+```
+
+### 4. Inicie o emulador
+
+No Android Studio: **Device Manager → ▶** para abrir o AVD.
+
+### 5. Rode o app no emulador
+
+Duas formas (ambas instalam no emulador já aberto):
+
+```bash
+cd artifacts/mobile
+
+# A) Expo Go — mais rápido: pressione "a" quando o Metro iniciar
+pnpm exec expo start
+
+# B) Build nativo — gera a pasta android/ para abrir no Android Studio
+pnpm exec expo run:android
+```
+
+Na **Opção B**, a pasta `artifacts/mobile/android/` gerada pode ser aberta
+diretamente no Android Studio em **Open → artifacts/mobile/android**.
+
+> Observação: na Opção B do passo 1 (API local via `http://10.0.2.2`) o tráfego
+> é HTTP sem TLS; em builds de desenvolvimento o Android permite isso por padrão.
+
 ### Regenerar o cliente da API
 
 Após editar `lib/api-spec/openapi.yaml`:

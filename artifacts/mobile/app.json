@@ -16,7 +16,9 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.calculadora5gnr.app"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },

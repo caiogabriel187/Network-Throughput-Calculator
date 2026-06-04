@@ -19,9 +19,29 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useColors } from "@/hooks/useColors";
 
 // Expo bundles run outside the web proxy, so the API client needs an absolute
-// URL to reach the Express server. The domain is injected at build time.
-if (process.env.EXPO_PUBLIC_DOMAIN) {
-  setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+// URL to reach the Express server.
+//
+// Resolution order:
+//   1. EXPO_PUBLIC_API_URL — explicit override. Set this (e.g. in a `.env`
+//      file) when running outside Replit, such as in the Android Studio
+//      emulator. Examples:
+//        - https://<seu-app>.replit.app   (API publicada no Replit)
+//        - http://10.0.2.2:8080           (API local; 10.0.2.2 = host do AVD)
+//   2. EXPO_PUBLIC_DOMAIN — injected automatically in the Replit dev/deploy
+//      environment.
+function resolveApiBaseUrl(): string | null {
+  const explicit = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+
+  const domain = process.env.EXPO_PUBLIC_DOMAIN?.trim();
+  if (domain) return `https://${domain}`;
+
+  return null;
+}
+
+const apiBaseUrl = resolveApiBaseUrl();
+if (apiBaseUrl) {
+  setBaseUrl(apiBaseUrl);
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.

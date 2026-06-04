@@ -34,7 +34,7 @@ A mobile (Expo) app with two on-device 5G NR engineering calculators (Throughput
 
 ## Architecture decisions
 
-- API base URL is set via `setBaseUrl` in `app/_layout.tsx` (guarded by the public domain env var); the generated client targets `/api/...`. Use the generated React Query hooks — do not hand-write fetch layers.
+- API base URL is set via `setBaseUrl` in `app/_layout.tsx`. Resolution order: `EXPO_PUBLIC_API_URL` (explicit override, e.g. for the Android Studio emulator — see `artifacts/mobile/.env.example`) → `https://${EXPO_PUBLIC_DOMAIN}` (Replit dev/deploy). The generated client targets `/api/...`. Use the generated React Query hooks — do not hand-write fetch layers.
 - API changes are spec-first: edit `openapi.yaml` → run codegen → use the generated hooks/schemas.
 - App is locked to dark appearance (`userInterfaceStyle: "dark"` in app.json); the palette lives in the `light` key of colors.ts since `useColors` falls back to it.
 - Throughput uses the TS 38.214 max-rate formula with N_RB tables from TS 38.101-1 (FR1) / 38.101-2 (FR2). The user-set target code rate replaces Rmax (default 948/1024 ≈ 0.9258).

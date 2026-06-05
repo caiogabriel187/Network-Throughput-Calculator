@@ -30,6 +30,11 @@ import { useColors } from "@/hooks/useColors";
 //        - http://10.0.2.2:8080           (API local; 10.0.2.2 = host do AVD)
 //   2. EXPO_PUBLIC_DOMAIN — injected automatically in the Replit dev/deploy
 //      environment.
+//   3. PUBLISHED_API_URL — the deployed Replit backend, used as the default so
+//      standalone builds (e.g. the Android Studio APK) reach the API on any
+//      network without needing a `.env` file.
+const PUBLISHED_API_URL = "https://network-throughput-calculator.replit.app";
+
 function resolveApiBaseUrl(): string | null {
   const explicit = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (explicit) return explicit.replace(/\/+$/, "");
@@ -37,7 +42,7 @@ function resolveApiBaseUrl(): string | null {
   const domain = process.env.EXPO_PUBLIC_DOMAIN?.trim();
   if (domain) return `https://${domain}`;
 
-  return null;
+  return PUBLISHED_API_URL;
 }
 
 const apiBaseUrl = resolveApiBaseUrl();

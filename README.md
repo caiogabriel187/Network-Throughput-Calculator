@@ -55,7 +55,9 @@ Abra a pré-visualização (web) ou escaneie o QR Code com o Expo Go.
 ## Rodar no Android Studio (emulador)
 
 O app pode ser executado no emulador do Android Studio em **qualquer
-computador** e **qualquer rede**. A URL da API é configurável: defina
+computador** e **qualquer rede**. Por padrão ele já aponta para a API publicada
+em `https://network-throughput-calculator.replit.app`, então funciona **sem
+nenhuma configuração**. Para usar outra API (ex.: rodando localmente), defina
 `EXPO_PUBLIC_API_URL` (veja `artifacts/mobile/.env.example`). Os cálculos
 funcionam offline; apenas o Histórico precisa da API.
 
@@ -76,7 +78,11 @@ A API precisa estar acessível pela internet para funcionar em qualquer rede.
   `PORT=8080 pnpm --filter @workspace/api-server run dev`. O emulador acessa o
   host da máquina pela URL especial `http://10.0.2.2:8080`.
 
-### 2. Configure a URL da API
+### 2. (Opcional) Configure a URL da API
+
+O app já vem apontado para a API publicada
+(`https://network-throughput-calculator.replit.app`), então **pode pular esta
+etapa**. Configure apenas se quiser usar outra API (ex.: a Opção B local):
 
 ```bash
 cp artifacts/mobile/.env.example artifacts/mobile/.env

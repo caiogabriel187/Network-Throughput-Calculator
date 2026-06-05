@@ -113,20 +113,26 @@ pnpm exec expo start
 # pressione "a" quando o Metro iniciar
 ```
 
-**Opção B — Build nativo (gera o projeto Android para o Android Studio):**
+**Opção B — Build nativo (abrir o projeto Android no Android Studio):**
 
-> Pré-requisito do monorepo pnpm: o `expo run:android` usa o autolinking do
-> Gradle, que precisa dos módulos nativos "achatados" em `node_modules`. Crie
-> `artifacts/mobile/.npmrc` com `node-linker=hoisted` e rode `pnpm install` na
-> raiz **antes** do build. (O Expo Go da Opção A não exige isso.)
+A pasta nativa `artifacts/mobile/android/` **já está gerada e versionada** (via
+`expo prebuild`), e o `node-linker=hoisted` exigido pelo autolinking do Gradle no
+monorepo pnpm já está configurado no `.npmrc` da raiz. Basta instalar e abrir:
+
+```bash
+pnpm install   # na raiz do projeto
+```
+
+No Android Studio: **Open → `artifacts/mobile/android`** e rode no emulador (▶
+Run). Pela linha de comando o equivalente é:
 
 ```bash
 cd artifacts/mobile
 pnpm exec expo run:android
 ```
 
-Isso gera a pasta `artifacts/mobile/android/`, que pode ser aberta diretamente no
-Android Studio em **Open → artifacts/mobile/android**.
+> Se você alterar `app.json` (ícone, nome, plugins), regenere a pasta nativa com
+> `pnpm exec expo prebuild --platform android`.
 
 > Observação: na Opção B do passo 1 (API local via `http://10.0.2.2`) o tráfego
 > é HTTP sem TLS; em builds de desenvolvimento o Android permite isso por padrão.

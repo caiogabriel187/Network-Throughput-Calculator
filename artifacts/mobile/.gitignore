@@ -11,7 +11,17 @@ expo-env.d.ts
 
 # Native
 ios/
-android/
+# android/ is committed (generated via expo prebuild); only ignore build outputs
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/.cxx/
+android/app/.cxx/
+android/.kotlin/
+android/captures/
+android/**/*.iml
+android/local.properties
 *.orig.*
 *.jks
 *.p8

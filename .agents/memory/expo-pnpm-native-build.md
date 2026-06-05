@@ -11,12 +11,15 @@ native module packages to be physically present in `node_modules`, so a fresh
 `expo run:android` / `expo prebuild` can fail to link native modules under the
 isolated layout.
 
-**Fix:** set `node-linker=hoisted` and reinstall before the native build.
+**Fix:** root `.npmrc` sets `node-linker=hoisted` (committed) so a fresh
+`pnpm install` produces the flat layout Gradle autolinking needs. The generated
+`artifacts/mobile/android/` is committed too (gitignore only excludes build
+outputs), so the project opens in Android Studio without re-running prebuild.
 
-**Why not just set it globally:** changing the root `node-linker` re-lays-out the
-entire monorepo's node_modules and forces a full reinstall — risky for the other
-artifacts and the running dev workflows. So it's documented as a per-user step in
-the mobile README rather than committed to the root `.npmrc`.
+**Why hoisted is safe to commit:** it makes node_modules flatter/more permissive,
+so existing resolution keeps working. node_modules is gitignored anyway, so what
+matters for a user cloning the repo is the committed `.npmrc` — that's why the
+setting lives there rather than as a one-off reinstall in this environment.
 
 **Expo Go path is unaffected:** `expo start` → press `a` only bundles JS (no
 native Gradle build), so it works on the Android Studio emulator without any

@@ -1,4 +1,9 @@
-import express, { type Express } from "express";
+import express, {
+  type Express,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -30,5 +35,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// Centralised error handler so async route rejections (e.g. database errors)
+// return JSON instead of Express's default HTML 500 page.
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled request error");
+  if (res.headersSent) return;
+  res.status(500).json({
+    title: "Erro interno",
+    detail: "Algo deu errado. Tente novamente.",
+  });
+});
 
 export default app;

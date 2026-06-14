@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputProps,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -276,6 +277,10 @@ export function TextField({
   error,
   multiline,
   autoFocus,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+  autoComplete,
 }: {
   label: string;
   value: string;
@@ -284,6 +289,10 @@ export function TextField({
   error?: string | null;
   multiline?: boolean;
   autoFocus?: boolean;
+  secureTextEntry?: boolean;
+  keyboardType?: TextInputProps["keyboardType"];
+  autoCapitalize?: TextInputProps["autoCapitalize"];
+  autoComplete?: TextInputProps["autoComplete"];
 }) {
   const colors = useColors();
   return (
@@ -306,6 +315,10 @@ export function TextField({
           placeholderTextColor={colors.mutedForeground}
           multiline={multiline}
           autoFocus={autoFocus}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
           style={[
             styles.input,
             multiline && styles.inputMultiline,

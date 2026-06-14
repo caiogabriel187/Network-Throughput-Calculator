@@ -9,6 +9,30 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface AuthCredentials {
+  /**
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
 export type CalculationType = typeof CalculationType[keyof typeof CalculationType];
 
 

@@ -1,132 +1,55 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { Router, type IRouter } from "express";
 import { rateLimit } from "express-rate-limit";
-import { randomUUID } from "node:crypto";
+import { and, desc, eq } from "drizzle-orm";
+import { db, calculationsTable, type CalculationRow } from "@workspace/db";
 import { CreateCalculationBody } from "@workspace/api-zod";
-
-type CalculationType = "throughput" | "link-budget";
-
-interface Calculation {
-  id: string;
-  type: CalculationType;
-  title: string;
-  summary: string;
-  notes?: string;
-  createdAt: string;
-}
+import { requireAuth } from "../middlewares/auth";
 
 // ---------------------------------------------------------------------------
-// Per-session in-memory store
-//
-// Each device generates its own opaque Bearer token (stored in AsyncStorage)
-// and sends it on every request. The server uses that token as the session key
-// so each caller only ever reads or mutates its own records.
+// Saved 5G NR calculations, persisted in PostgreSQL and scoped to the
+// authenticated user. Every handler runs behind `requireAuth`, so a caller can
+// only ever read or mutate rows whose `user_id` matches their session.
 // ---------------------------------------------------------------------------
 
-interface SessionData {
-  calculations: Calculation[];
-  lastAccessedAt: number;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toApi(row: CalculationRow) {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    summary: row.summary,
+    ...(row.notes ? { notes: row.notes } : {}),
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
-// Caps that bound memory growth regardless of attacker volume.
-const MAX_RECORDS_PER_SESSION = 50;
-const MAX_SESSIONS = 5_000;
-
-const sessions = new Map<string, SessionData>();
-
-function getOrCreateSession(token: string): SessionData {
-  let session = sessions.get(token);
-
-  if (!session) {
-    // Evict the least-recently-used session when the global cap is reached
-    // so the map stays bounded under sustained abuse.
-    if (sessions.size >= MAX_SESSIONS) {
-      let lruToken: string | null = null;
-      let lruTime = Infinity;
-      for (const [t, s] of sessions) {
-        if (s.lastAccessedAt < lruTime) {
-          lruTime = s.lastAccessedAt;
-          lruToken = t;
-        }
-      }
-      if (lruToken) sessions.delete(lruToken);
-    }
-
-    session = { calculations: [], lastAccessedAt: Date.now() };
-    sessions.set(token, session);
-  } else {
-    session.lastAccessedAt = Date.now();
-  }
-
-  return session;
-}
-
-function sortedCalcs(calcs: Calculation[]): Calculation[] {
-  return [...calcs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-// ---------------------------------------------------------------------------
-// Auth middleware — validates that the request carries a non-empty Bearer
-// token. The token is the caller's session identifier; it is not validated
-// against a server-side secret, so it carries no global privilege. Each
-// unique token gives access only to that token's own data.
-// ---------------------------------------------------------------------------
-
-// Accepted token characters: hex, alphanumeric, hyphens, underscores.
-const TOKEN_RE = /^[a-zA-Z0-9\-_]+$/;
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      sessionToken?: string;
-    }
-  }
-}
-
-function requireSession(req: Request, res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-
-  if (!token) {
-    res.status(401).json({
-      title: "Não autorizado",
-      detail: "Token de sessão ausente. Inclua um header Authorization: Bearer <token>.",
-    });
-    return;
-  }
-
-  if (token.length > 128 || !TOKEN_RE.test(token)) {
-    res.status(401).json({
-      title: "Não autorizado",
-      detail: "Token de sessão inválido.",
-    });
-    return;
-  }
-
-  req.sessionToken = token;
-  next();
-}
-
-// ---------------------------------------------------------------------------
-// Rate limiter — caps POST /calculations at 30 requests per IP per minute
-// to resist write-flood memory-exhaustion attacks.
-// ---------------------------------------------------------------------------
+// Caps POST /calculations at 30 requests per IP per minute to resist
+// write-flood abuse.
 const postRateLimit = rateLimit({
   windowMs: 60 * 1000,
   limit: 30,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { title: "Muitas requisições", detail: "Tente novamente em alguns instantes." },
+  message: {
+    title: "Muitas requisições",
+    detail: "Tente novamente em alguns instantes.",
+  },
 });
 
 const router: IRouter = Router();
 
-router.get("/calculations", requireSession, (req, res) => {
-  const session = getOrCreateSession(req.sessionToken!);
-  res.json(sortedCalcs(session.calculations));
+router.get("/calculations", requireAuth, async (req, res) => {
+  const rows = await db
+    .select()
+    .from(calculationsTable)
+    .where(eq(calculationsTable.userId, req.user!.id))
+    .orderBy(desc(calculationsTable.createdAt));
+  res.json(rows.map(toApi));
 });
 
-router.post("/calculations", requireSession, postRateLimit, (req, res) => {
+router.post("/calculations", requireAuth, postRateLimit, async (req, res) => {
   const parsed = CreateCalculationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -150,41 +73,46 @@ router.post("/calculations", requireSession, postRateLimit, (req, res) => {
     return;
   }
 
-  const session = getOrCreateSession(req.sessionToken!);
+  const trimmedNotes = notes?.trim();
+  const inserted = await db
+    .insert(calculationsTable)
+    .values({
+      userId: req.user!.id,
+      type,
+      title: trimmedTitle,
+      summary: trimmedSummary,
+      ...(trimmedNotes ? { notes: trimmedNotes } : {}),
+    })
+    .returning();
 
-  // Evict the oldest record when the per-session cap is reached.
-  if (session.calculations.length >= MAX_RECORDS_PER_SESSION) {
-    const oldestIndex = session.calculations.reduce(
-      (minIdx, calc, idx, arr) =>
-        calc.createdAt < arr[minIdx].createdAt ? idx : minIdx,
-      0,
-    );
-    session.calculations.splice(oldestIndex, 1);
-  }
-
-  const calculation: Calculation = {
-    id: randomUUID(),
-    type: type as CalculationType,
-    title: trimmedTitle,
-    summary: trimmedSummary,
-    ...(notes && notes.trim() ? { notes: notes.trim() } : {}),
-    createdAt: new Date().toISOString(),
-  };
-
-  session.calculations.push(calculation);
-  res.status(201).json(calculation);
+  res.status(201).json(toApi(inserted[0]));
 });
 
-router.delete("/calculations/:id", requireSession, (req, res) => {
-  const session = getOrCreateSession(req.sessionToken!);
-  const index = session.calculations.findIndex((c) => c.id === req.params.id);
+router.delete("/calculations/:id", requireAuth, async (req, res) => {
+  const id = typeof req.params.id === "string" ? req.params.id : "";
 
-  if (index === -1) {
+  // A non-UUID id can never match a row; short-circuit to 404 and avoid a
+  // Postgres "invalid input syntax for type uuid" error.
+  if (!UUID_RE.test(id)) {
     res.status(404).json({ title: "Cálculo não encontrado" });
     return;
   }
 
-  session.calculations.splice(index, 1);
+  const deleted = await db
+    .delete(calculationsTable)
+    .where(
+      and(
+        eq(calculationsTable.id, id),
+        eq(calculationsTable.userId, req.user!.id),
+      ),
+    )
+    .returning({ id: calculationsTable.id });
+
+  if (!deleted.length) {
+    res.status(404).json({ title: "Cálculo não encontrado" });
+    return;
+  }
+
   res.status(204).end();
 });
 

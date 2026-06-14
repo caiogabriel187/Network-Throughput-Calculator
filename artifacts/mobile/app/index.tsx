@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 const WEB_TOP_INSET = 67;
@@ -72,10 +74,22 @@ function CalcCard({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { user, signOut } = useAuth();
   const isWeb = Platform.OS === "web";
 
   const topPad = isWeb ? WEB_TOP_INSET : insets.top + 12;
   const bottomPad = isWeb ? WEB_BOTTOM_INSET : insets.bottom + 24;
+
+  const handleLogout = () => {
+    if (isWeb) {
+      signOut();
+      return;
+    }
+    Alert.alert("Sair", "Deseja encerrar a sessão?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: () => signOut() },
+    ]);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -107,10 +121,31 @@ export default function HomeScreen() {
             </Text>
             <Text
               style={[styles.brandSubtitle, { color: colors.mutedForeground }]}
+              numberOfLines={1}
             >
-              Calculadoras de engenharia de rede
+              {user?.email ?? "Calculadoras de engenharia de rede"}
             </Text>
           </View>
+          <Pressable
+            onPress={handleLogout}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+            style={({ pressed }) => [
+              styles.logoutBtn,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="logout"
+              size={20}
+              color={colors.mutedForeground}
+            />
+          </Pressable>
         </View>
 
         <Text style={[styles.hero, { color: colors.foreground }]}>
@@ -181,6 +216,14 @@ const styles = StyleSheet.create({
   brandText: { flex: 1 },
   brandTitle: { fontFamily: "Inter_700Bold", fontSize: 18 },
   brandSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
+  logoutBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   hero: {
     fontFamily: "Inter_700Bold",
     fontSize: 34,

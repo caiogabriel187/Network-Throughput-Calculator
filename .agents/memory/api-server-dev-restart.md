@@ -11,8 +11,7 @@ esbuild and runs the bundle. There is no watch/HMR.
 
 **Why:** A stale bundle keeps serving the previously-built routes, so newly added
 endpoints (and even pre-existing ones if the file moved) return Express 404
-("Cannot GET /api/...") even though the source is correct. This wasted a debug
-cycle — the source was right; only the running bundle was old.
+("Cannot GET /api/...") even though the source is correct.
 
 **How to apply:** curl-test against `https://$REPLIT_DEV_DOMAIN/api/...` only
 after a restart. The api-server is exposed at path `/api` (artifact.toml

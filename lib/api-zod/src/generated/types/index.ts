@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './authCredentials';
+export * from './authResponse';
 export * from './calculation';
 export * from './calculationType';
 export * from './createCalculation';
 export * from './healthStatus';
+export * from './user';

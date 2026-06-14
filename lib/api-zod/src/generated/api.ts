@@ -61,3 +61,59 @@ export const DeleteCalculationParams = zod.object({
 })
 
 
+/**
+ * Registers a new user with email and password, returning a session token.
+ * @summary Create an account
+ */
+export const registerBodyEmailMin = 3;
+export const registerBodyEmailMax = 320;
+
+export const registerBodyPasswordMin = 8;
+export const registerBodyPasswordMax = 128;
+
+
+
+export const RegisterBody = zod.object({
+  "email": zod.string().email().min(registerBodyEmailMin).max(registerBodyEmailMax),
+  "password": zod.string().min(registerBodyPasswordMin).max(registerBodyPasswordMax)
+})
+
+
+/**
+ * Authenticates an existing user, returning a session token.
+ * @summary Log in
+ */
+export const loginBodyEmailMin = 3;
+export const loginBodyEmailMax = 320;
+
+export const loginBodyPasswordMin = 8;
+export const loginBodyPasswordMax = 128;
+
+
+
+export const LoginBody = zod.object({
+  "email": zod.string().email().min(loginBodyEmailMin).max(loginBodyEmailMax),
+  "password": zod.string().min(loginBodyPasswordMin).max(loginBodyPasswordMax)
+})
+
+export const LoginResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * Returns the authenticated user's profile.
+ * @summary Current user
+ */
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+

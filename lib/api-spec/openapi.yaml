@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication and user accounts
   - name: calculations
     description: Saved 5G NR calculations
 paths:
@@ -88,6 +90,86 @@ paths:
           description: Deleted
         "401":
           description: Missing or invalid API key
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Create an account
+      description: Registers a new user with email and password, returning a session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid input
+        "409":
+          description: Email already registered
+        "429":
+          description: Too many requests
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in
+      description: Authenticates an existing user, returning a session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid input
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Too many requests
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out
+      description: Revokes the current session token.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "204":
+          description: Logged out
+        "401":
+          description: Missing or invalid token
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Current user
+      description: Returns the authenticated user's profile.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: The authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid token
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -103,6 +185,45 @@ components:
           type: string
       required:
         - status
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - createdAt
+    AuthCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+      required:
+        - email
+        - password
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
     CalculationType:
       type: string
       enum:

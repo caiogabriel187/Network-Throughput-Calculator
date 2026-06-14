@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -127,9 +127,10 @@ export default function HistoryScreen() {
       refreshing={isRefetching}
       ListHeaderComponent={
         <View style={{ marginBottom: 16 }}>
-          <Link href="/save-calculation" asChild>
-            <Button label="+ Salvar novo cálculo" onPress={() => {}} />
-          </Link>
+          <Button
+            label="+ Salvar novo cálculo"
+            onPress={() => router.push("/save-calculation")}
+          />
         </View>
       }
       ListEmptyComponent={

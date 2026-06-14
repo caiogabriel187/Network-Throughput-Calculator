@@ -74,8 +74,9 @@ function CalcCard({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, status, signOut } = useAuth();
   const isWeb = Platform.OS === "web";
+  const isAuthenticated = status === "authenticated";
 
   const topPad = isWeb ? WEB_TOP_INSET : insets.top + 12;
   const bottomPad = isWeb ? WEB_BOTTOM_INSET : insets.bottom + 24;
@@ -126,26 +127,52 @@ export default function HomeScreen() {
               {user?.email ?? "Calculadoras de engenharia de rede"}
             </Text>
           </View>
-          <Pressable
-            onPress={handleLogout}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
-            style={({ pressed }) => [
-              styles.logoutBtn,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.card,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name="logout"
-              size={20}
-              color={colors.mutedForeground}
-            />
-          </Pressable>
+          {isAuthenticated ? (
+            <Pressable
+              onPress={handleLogout}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Sair da conta"
+              style={({ pressed }) => [
+                styles.logoutBtn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="logout"
+                size={20}
+                color={colors.mutedForeground}
+              />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.push("/login")}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Entrar na conta"
+              style={({ pressed }) => [
+                styles.loginBtn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.card,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="login"
+                size={18}
+                color={colors.primary}
+              />
+              <Text style={[styles.loginBtnText, { color: colors.primary }]}>
+                Entrar
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <Text style={[styles.hero, { color: colors.foreground }]}>
@@ -171,7 +198,11 @@ export default function HomeScreen() {
           />
           <CalcCard
             title="Histórico de cálculos"
-            subtitle="Resultados salvos na nuvem"
+            subtitle={
+              isAuthenticated
+                ? "Resultados salvos na sua conta"
+                : "Entre para salvar e revisar cálculos"
+            }
             icon="history"
             onPress={() => router.push("/history")}
           />
@@ -224,6 +255,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
   },
+  loginBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  loginBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
   hero: {
     fontFamily: "Inter_700Bold",
     fontSize: 34,

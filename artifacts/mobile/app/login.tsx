@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
@@ -78,7 +79,13 @@ export default function LoginScreen() {
       } else {
         await signUp(trimmedEmail, password);
       }
-      // On success the auth gate swaps this screen out automatically.
+      // On success, dismiss the login screen and return to where the user came
+      // from (home or history); both reflect the new authenticated state.
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
     } catch (err) {
       setError(errorMessage(mode, err));
     } finally {

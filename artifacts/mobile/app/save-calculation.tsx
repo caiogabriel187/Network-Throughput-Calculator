@@ -1,10 +1,12 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Platform, StyleSheet, View } from "react-native";
+import { Alert, Platform, StyleSheet, Text, View } from "react-native";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { Button, Card, SectionLabel, Segmented, TextField } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import {
   CalculationType,
@@ -20,6 +22,7 @@ export default function SaveCalculationScreen() {
   const colors = useColors();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { status } = useAuth();
   const params = useLocalSearchParams<{
     type?: string;
     title?: string;
@@ -54,6 +57,39 @@ export default function SaveCalculationScreen() {
       },
     },
   });
+
+  if (status !== "authenticated") {
+    return (
+      <View
+        style={[styles.promptContainer, { backgroundColor: colors.background }]}
+      >
+        <MaterialCommunityIcons
+          name="lock-outline"
+          size={40}
+          color={colors.mutedForeground}
+        />
+        <Text style={[styles.promptTitle, { color: colors.foreground }]}>
+          Entre para salvar
+        </Text>
+        <Text style={[styles.promptText, { color: colors.mutedForeground }]}>
+          Crie uma conta ou faça login para salvar este cálculo no seu
+          histórico.
+        </Text>
+        <View style={{ width: "100%", maxWidth: 320 }}>
+          <Button
+            label="Entrar ou criar conta"
+            onPress={() => router.push("/login")}
+          />
+          <View style={{ height: 12 }} />
+          <Button
+            label="Cancelar"
+            variant="secondary"
+            onPress={() => router.back()}
+          />
+        </View>
+      </View>
+    );
+  }
 
   const validate = () => {
     const next: { title?: string; summary?: string } = {};
@@ -146,4 +182,24 @@ export default function SaveCalculationScreen() {
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  promptContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  promptTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 18,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  promptText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 20,
+  },
+});

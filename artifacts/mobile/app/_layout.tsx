@@ -69,8 +69,6 @@ function RootLayoutNav() {
 
   if (status === "loading") return null;
 
-  const isAuthenticated = status === "authenticated";
-
   return (
     <Stack
       screenOptions={{
@@ -85,25 +83,23 @@ function RootLayoutNav() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="throughput"
-          options={{ title: "Throughput 5G NR" }}
-        />
-        <Stack.Screen
-          name="link-budget"
-          options={{ title: "Link Budget 5G NR" }}
-        />
-        <Stack.Screen name="history" options={{ title: "Histórico" }} />
-        <Stack.Screen
-          name="save-calculation"
-          options={{ title: "Salvar cálculo", presentation: "modal" }}
-        />
-      </Stack.Protected>
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-      </Stack.Protected>
+      {/* Calculators are open to everyone; only the cloud history/save flow
+          requires an account, gated inside the respective screens. */}
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="throughput"
+        options={{ title: "Throughput 5G NR" }}
+      />
+      <Stack.Screen
+        name="link-budget"
+        options={{ title: "Link Budget 5G NR" }}
+      />
+      <Stack.Screen name="history" options={{ title: "Histórico" }} />
+      <Stack.Screen
+        name="save-calculation"
+        options={{ title: "Salvar cálculo", presentation: "modal" }}
+      />
+      <Stack.Screen name="login" options={{ title: "Entrar" }} />
     </Stack>
   );
 }

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CalculationCard } from "@/components/CalculationCard";
 import { Button } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import {
   getGetCalculationsQueryKey,
@@ -27,16 +28,24 @@ export default function HistoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { status } = useAuth();
+  const isAuthenticated = status === "authenticated";
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch, isRefetching } =
-    useGetCalculations();
+    useGetCalculations({
+      query: {
+        enabled: isAuthenticated,
+        queryKey: getGetCalculationsQueryKey(),
+      },
+    });
 
   // Refetch whenever the screen regains focus (e.g. after saving a new item).
+  // Only when signed in — the endpoint requires a session.
   useFocusEffect(
     useCallback(() => {
-      refetch();
-    }, [refetch]),
+      if (isAuthenticated) refetch();
+    }, [isAuthenticated, refetch]),
   );
 
   const deleteMutation = useDeleteCalculation({
@@ -77,6 +86,31 @@ export default function HistoryScreen() {
     },
     [deleteMutation],
   );
+
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <MaterialCommunityIcons
+          name="lock-outline"
+          size={40}
+          color={colors.mutedForeground}
+        />
+        <Text style={[styles.errorTitle, { color: colors.foreground }]}>
+          Entre para ver seu histórico
+        </Text>
+        <Text style={[styles.centerText, { color: colors.mutedForeground }]}>
+          Faça login para salvar cálculos na sua conta e acessá-los de qualquer
+          dispositivo.
+        </Text>
+        <View style={{ marginTop: 16 }}>
+          <Button
+            label="Entrar ou criar conta"
+            onPress={() => router.push("/login")}
+          />
+        </View>
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (

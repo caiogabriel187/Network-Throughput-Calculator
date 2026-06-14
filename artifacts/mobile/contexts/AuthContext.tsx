@@ -20,6 +20,28 @@ import {
 
 const TOKEN_KEY = "@5gnr/auth_token";
 
+// Cap how long the startup session check may block the app. If the API is slow
+// or unreachable, we fall back to the logged-out state (calculators still work)
+// instead of leaving the user stuck on the loading screen indefinitely.
+const SESSION_RESTORE_TIMEOUT_MS = 8000;
+const TIMEOUT_MARKER = "AUTH_RESTORE_TIMEOUT";
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(TIMEOUT_MARKER)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Token store
 //
@@ -61,15 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         currentToken = stored;
-        const me = await getCurrentUser();
+        const me = await withTimeout(
+          getCurrentUser(),
+          SESSION_RESTORE_TIMEOUT_MS,
+        );
         if (!active) return;
         setUser(me);
         setStatus("authenticated");
-      } catch {
-        // Token missing / expired / invalid → start from a clean slate.
+      } catch (error) {
+        if (!active) return;
+        const timedOut =
+          error instanceof Error && error.message === TIMEOUT_MARKER;
+        // Always drop the in-memory token so no stale bearer is attached to
+        // requests during this run. On a real auth failure the token is
+        // missing/expired/invalid, so also drop the persisted copy. On a
+        // timeout (slow/unreachable API) keep the persisted token so the
+        // session can recover on the next launch.
         currentToken = null;
-        await AsyncStorage.removeItem(TOKEN_KEY);
-        if (active) setStatus("unauthenticated");
+        if (!timedOut) {
+          await AsyncStorage.removeItem(TOKEN_KEY);
+        }
+        setUser(null);
+        setStatus("unauthenticated");
       }
     })();
 

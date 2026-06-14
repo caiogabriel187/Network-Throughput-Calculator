@@ -2,3 +2,4 @@
 - [Spec-first API workflow](api-codegen-workflow.md) — edit lib/api-spec/openapi.yaml then run codegen; use generated React Query hooks + Zod schemas, never hand-write fetch.
 - [Expo native build vs pnpm linker](expo-pnpm-native-build.md) — expo run:android/prebuild needs node-linker=hoisted here; Expo Go (expo start → a) works unchanged. Prefer Expo Go.
 - [Link asChild no-ops on web](expo-router-link-aschild-web.md) — <Link asChild> over the custom Button (TouchableOpacity) doesn't navigate on Expo web; use router.push() in onPress.
+- [Root layout loading must not be null](expo-auth-loading-blank-screen.md) — `return null` while async auth resolves shows a blank white screen (reads as a crash); render a loading view + time-bound the session check.

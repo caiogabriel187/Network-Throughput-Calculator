@@ -4,3 +4,4 @@
 - [Link asChild no-ops on web](expo-router-link-aschild-web.md) — <Link asChild> over the custom Button (TouchableOpacity) doesn't navigate on Expo web; use router.push() in onPress.
 - [Root layout loading must not be null](expo-auth-loading-blank-screen.md) — `return null` while async auth resolves shows a blank white screen (reads as a crash); render a loading view + time-bound the session check.
 - [Stale deployment looks like a connection error](stale-deployment-connection-error.md) — feature fails on the published app but works in dev → suspect a stale deploy (404 on new route, no prod DB); republish fixes code + auto-migrates prod schema.
+- [Expo publish Metro HTTP 500 mid-bundle](expo-deploy-metro-500-transient.md) — build script swallows the 500 body; reproduce prod bundle locally (expo export / expo start --no-dev --minify). Both pass = transient build OOM/hiccup, just retry publish.

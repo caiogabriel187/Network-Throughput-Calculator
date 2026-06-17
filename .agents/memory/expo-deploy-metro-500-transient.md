@@ -26,8 +26,22 @@ expect the root cause to be in the build log.
      `artifacts/mobile/node_modules/...`, not `node_modules/...`.
    - Port 8081 is taken locally by the mockup-sandbox vite server; use a different port.
 
-If both succeed locally, the deploy 500 was a **transient/resource failure** in the
-build container (Metro crashed/OOM'd mid-bundle) — the fix is simply to retry the
-publish. The build is memory-heavy (bundles iOS+Android plus all @expo-google-fonts
-Inter weights). If it recurs, harden the build (e.g. raise Node heap via
-NODE_OPTIONS=--max-old-space-size in the mobile artifact's build env).
+**Local success does NOT mean the deploy failure is transient.** The dev/local
+container has more RAM than the deploy build container, so the prod bundle builds
+fine locally while OOMing in the deploy. The decisive tell: if the deploy fails at
+the **exact same module count / percentage every time** (here: iOS 80.4%, 720/803,
+~17s), it is **deterministic memory pressure**, not a random hiccup — do NOT just
+"retry and hope."
+
+Root cause here: `app.json` has `experiments.reactCompiler: true`, which runs a heavy
+Babel plugin on every module, multiplying per-worker transform memory. Metro spawns
+one worker per CPU; the build container reports many CPUs but limited RAM, so peak
+memory blows past the cgroup limit and a worker dies → Metro answers the `.bundle`
+GET with HTTP 500.
+
+**Fix (in `artifacts/mobile/scripts/build.js`, the Metro spawn):**
+- Add `--max-workers 2` to the `expo start` args — the main lever; caps concurrent
+  transform memory.
+- Add `NODE_OPTIONS=--max-old-space-size=4096` to the spawn env — raises the heap
+  ceiling for the serializer/transform processes.
+Validate by re-running the local repro WITH the flags (expect HTTP 200). Then republish.

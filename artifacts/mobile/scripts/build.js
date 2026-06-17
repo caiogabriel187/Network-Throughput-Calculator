@@ -140,6 +140,12 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
     ...process.env,
     EXPO_PUBLIC_DOMAIN: expoPublicDomain,
     EXPO_PUBLIC_REPL_ID: expoPublicReplId,
+    // Raise the V8 heap ceiling for Metro's serializer/transform processes.
+    // The production bundle is large (React Compiler + minify + many font
+    // assets) and OOMs the build container at its default heap size.
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, "--max-old-space-size=4096"]
+      .filter(Boolean)
+      .join(" "),
   };
 
   if (expoPublicReplId) {
@@ -155,6 +161,11 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
       "--no-dev",
       "--minify",
       "--localhost",
+      // Cap Metro transform workers. The build container reports many CPUs but
+      // has limited RAM; the default (one worker per CPU) makes peak memory
+      // exceed the container and a worker dies mid-bundle (HTTP 500 ~80%).
+      "--max-workers",
+      "2",
     ],
     {
       stdio: ["ignore", "pipe", "pipe"],
